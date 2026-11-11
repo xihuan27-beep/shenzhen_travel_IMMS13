@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>선전 여행 🇨🇳 IMMS13</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3/dist/index.js"></script>
+</head>
+<body>
+
+  <!-- 헤더 -->
+  <header>
+    <div class="header-title">🏙️ 선전 여행 IMMS13</div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" id="btn-locate">📍 내 위치</button>
+      <button class="btn btn-primary" id="btn-add-place">+ 장소 추가</button>
+    </div>
+  </header>
+
+  <!-- 카테고리 필터 -->
+  <div class="filter-bar">
+    <button class="filter-chip active" data-category="all">전체</button>
+    <button class="filter-chip" data-category="breakfast">☕ 아침</button>
+    <button class="filter-chip" data-category="lunch">🍜 점심</button>
+    <button class="filter-chip" data-category="dinner">🍖 저녁</button>
+    <button class="filter-chip" data-category="cafe">🍰 카페</button>
+    <button class="filter-chip" data-category="attraction">🏛️ 관광지</button>
+    <button class="filter-chip" data-category="shopping">🛍️ 쇼핑</button>
+    <button class="filter-chip" data-category="meetup">📍 만남의 장소</button>
+    <button class="filter-chip" data-category="top">⭐ 왕추천</button>
+    <button class="filter-chip" data-category="hotel">🏨 추천숙소</button>
+    <button class="filter-chip" data-category="other">📌 기타</button>
+  </div>
+
+  <!-- 셋업 안내 배너 -->
+  <div id="setup-banner" class="hidden">
+    ⚠️ <strong>js/config.js</strong>에 Google Maps API 키와 Supabase 정보를 입력해주세요.
+  </div>
+
+  <!-- 메인 -->
+  <main>
+    <div id="map-container">
+      <div id="map"></div>
+      <div id="loading" class="hidden">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <div id="sidebar">
+      <div class="sidebar-header">
+        <span class="place-count" id="place-count">0곳</span>
+        <div class="sort-bar">
+          <button class="sort-btn active" data-sort="recent">최신순</button>
+          <button class="sort-btn" data-sort="popular">인기순</button>
+        </div>
+      </div>
+      <div id="places-list"></div>
+    </div>
+  </main>
+
+  <!-- 모바일 탭 -->
+  <div class="mobile-tabs">
+    <button class="tab-btn active" data-tab="map">🗺️<br>지도</button>
+    <button class="tab-btn" data-tab="list">📋<br>목록</button>
+  </div>
+
+  <!-- 장소 추가 모달 -->
+  <div id="modal-add" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title">장소 추가</h2>
+        <button class="btn-close" id="btn-close-add">✕</button>
+      </div>
+
+      <form id="form-add">
+        <div class="form-group">
+          <label>장소 검색</label>
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="search-input"
+              class="search-input"
+              placeholder="한글로 장소 이름 검색..."
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <!-- 검색 결과 미리보기 -->
+        <div id="add-preview" class="add-preview hidden">
+          <div id="preview-name-ko" class="preview-name-ko"></div>
+          <div class="preview-meta">
+            <span id="preview-name-zh" class="preview-name-zh"></span>
+            <span id="preview-pinyin" class="preview-pinyin"></span>
+            <span id="preview-rating" class="preview-rating"></span>
+          </div>
+          <div id="preview-address" class="preview-address"></div>
+        </div>
+
+        <div class="form-group">
+          <label>카테고리</label>
+          <select id="select-category" class="select-input">
+            <option value="">카테고리 선택...</option>
+            <option value="breakfast">☕ 아침</option>
+            <option value="lunch">🍜 점심</option>
+            <option value="dinner">🍖 저녁</option>
+            <option value="cafe">🍰 카페</option>
+            <option value="attraction">🏛️ 관광지</option>
+            <option value="shopping">🛍️ 쇼핑</option>
+            <option value="meetup">📍 만남의 장소</option>
+            <option value="top">⭐ 왕추천</option>
+            <option value="hotel">🏨 추천숙소</option>
+            <option value="other">📌 기타</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btn-submit" style="width:100%;padding:14px;font-size:16px;border-radius:14px;">
+          추가하기
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 장소 상세 모달 -->
+  <div id="modal-detail" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <div>
+          <div id="detail-category" class="detail-category"></div>
+          <div id="detail-name-ko" class="detail-name-ko"></div>
+          <div id="detail-name-zh" class="detail-name-zh"></div>
+          <div id="detail-pinyin" class="detail-pinyin"></div>
+        </div>
+        <button class="btn-close" id="btn-close-detail">✕</button>
+      </div>
+
+      <div id="detail-rating" class="detail-rating"></div>
+      <div id="detail-address" class="detail-address"></div>
+
+      <div class="detail-actions">
+        <button id="detail-wants" class="wants-btn">♥ 0명</button>
+        <button id="detail-amap" class="amap-btn">📍 고덕지도로 길찾기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 -->
+  <div id="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
