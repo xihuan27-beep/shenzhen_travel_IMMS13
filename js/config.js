@@ -1,7 +1,7 @@
 const CONFIG = {
-  GOOGLE_MAPS_API_KEY: 'YOUR_GOOGLE_MAPS_API_KEY',
-  SUPABASE_URL: 'YOUR_SUPABASE_URL',
-  SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
+  GOOGLE_MAPS_API_KEY: 'AIzaSyDaK1GfUrErCnM9918xv8iRnBtMh1-pRoY',
+  SUPABASE_URL: 'https://fztwijfhgjtkayyvauko.supabase.co/rest/v1/',
+  SUPABASE_ANON_KEY: 'sb_publishable_fG3zhZ6RqgoBDyKoj1sA1A_Jj6VBap-',
   // Cloudflare Worker URL (설정하면 중국에서도 접속 가능)
   // 없으면 Supabase 직접 호출
   WORKER_URL: '',
