@@ -14,9 +14,22 @@
     <div class="header-title">🏙️ 선전 여행 IMMS13</div>
     <div class="header-actions">
       <button class="btn btn-secondary" id="btn-locate">📍 내 위치</button>
-      <button class="btn btn-primary" id="btn-add-place">+ 장소 추가</button>
     </div>
   </header>
+
+  <!-- 검색바 -->
+  <div class="search-bar-wrap">
+    <div class="search-bar-inner">
+      <span class="search-bar-icon">🔍</span>
+      <input
+        type="text"
+        id="main-search-input"
+        class="main-search-input"
+        placeholder="장소 검색 (한글, 영어, 중국어 모두 가능)"
+        autocomplete="off"
+      />
+    </div>
+  </div>
 
   <!-- 카테고리 필터 -->
   <div class="filter-bar">
@@ -142,8 +155,32 @@
       <div id="detail-address" class="detail-address"></div>
 
       <div class="detail-actions">
+        <button id="detail-tag" class="tag-btn hidden">＋ 이 장소 태그하기</button>
         <button id="detail-wants" class="wants-btn">♥ 0명</button>
         <button id="detail-amap" class="amap-btn">📍 고덕지도로 길찾기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 카테고리 선택 모달 (검색 후 태그할 때) -->
+  <div id="modal-category" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title">카테고리 선택</h2>
+        <button class="btn-close" id="btn-close-category">✕</button>
+      </div>
+      <div class="category-grid" id="category-grid">
+        <button class="cat-select-btn" data-category="breakfast">☕<br>아침</button>
+        <button class="cat-select-btn" data-category="lunch">🍜<br>점심</button>
+        <button class="cat-select-btn" data-category="dinner">🍖<br>저녁</button>
+        <button class="cat-select-btn" data-category="cafe">🍰<br>카페</button>
+        <button class="cat-select-btn" data-category="attraction">🏛️<br>관광지</button>
+        <button class="cat-select-btn" data-category="shopping">🛍️<br>쇼핑</button>
+        <button class="cat-select-btn" data-category="meetup">📍<br>만남의 장소</button>
+        <button class="cat-select-btn" data-category="top">⭐<br>왕추천</button>
+        <button class="cat-select-btn" data-category="hotel">🏨<br>추천숙소</button>
+        <button class="cat-select-btn" data-category="other">📌<br>기타</button>
       </div>
     </div>
   </div>

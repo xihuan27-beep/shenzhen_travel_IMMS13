@@ -17,6 +17,7 @@
   --shadow: 0 2px 12px rgba(0,0,0,0.08);
   --radius: 14px;
   --header-h: 60px;
+  --search-h: 56px;
   --filter-h: 52px;
 }
 
@@ -74,6 +75,49 @@ header {
 .btn-ghost { background: transparent; color: var(--accent); padding: 8px 12px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ─── 검색바 ────────────────────────────────────────────────── */
+.search-bar-wrap {
+  height: var(--search-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  position: fixed;
+  top: var(--header-h);
+  left: 0; right: 0;
+  z-index: 100;
+}
+.search-bar-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+}
+.search-bar-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 16px;
+  pointer-events: none;
+}
+.main-search-input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  border: 1.5px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.main-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
+}
+
 /* ─── 필터 바 ──────────────────────────────────────────────── */
 .filter-bar {
   height: var(--filter-h);
@@ -86,7 +130,7 @@ header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   position: fixed;
-  top: var(--header-h);
+  top: calc(var(--header-h) + var(--search-h));
   left: 0; right: 0;
   z-index: 99;
 }
@@ -115,8 +159,8 @@ header {
 /* ─── 메인 레이아웃 ────────────────────────────────────────── */
 main {
   display: flex;
-  height: calc(100vh - var(--header-h) - var(--filter-h));
-  margin-top: calc(var(--header-h) + var(--filter-h));
+  height: calc(100vh - var(--header-h) - var(--search-h) - var(--filter-h));
+  margin-top: calc(var(--header-h) + var(--search-h) + var(--filter-h));
 }
 
 #map-container { flex: 1; position: relative; }
@@ -347,6 +391,42 @@ main {
 }
 .wants-btn.liked { border-color: var(--danger); color: var(--danger); background: #fff0f0; }
 .wants-btn:not(.liked):hover { border-color: var(--danger); color: var(--danger); }
+
+.tag-btn {
+  width: 100%;
+  padding: 14px;
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tag-btn:hover { background: var(--accent); color: #fff; }
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 4px 0;
+}
+.cat-select-btn {
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 12px 4px;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.6;
+  transition: all 0.15s;
+}
+.cat-select-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 
 .amap-btn {
   width: 100%;

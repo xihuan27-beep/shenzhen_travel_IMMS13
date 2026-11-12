@@ -78,18 +78,72 @@ function initMap() {
 }
 
 function initAutocomplete() {
-  const input = document.getElementById('search-input');
-  autocomplete = new google.maps.places.Autocomplete(input, {
+  // 메인 검색바 자동완성
+  const mainInput = document.getElementById('main-search-input');
+  const mainAC = new google.maps.places.Autocomplete(mainInput, {
     fields: ['place_id', 'name', 'geometry', 'formatted_address', 'rating'],
   });
-  autocomplete.addListener('place_changed', onPlaceSelected);
+  mainAC.addListener('place_changed', async () => {
+    const place = mainAC.getPlace();
+    if (!place.geometry) return;
+    map.panTo(place.geometry.location);
+    map.setZoom(16);
+    await openSearchResult(place, mainInput.value);
+  });
+
+  // 추가 모달 내 검색창 자동완성 (기존 유지)
+  const modalInput = document.getElementById('search-input');
+  if (modalInput) {
+    autocomplete = new google.maps.places.Autocomplete(modalInput, {
+      fields: ['place_id', 'name', 'geometry', 'formatted_address', 'rating'],
+    });
+    autocomplete.addListener('place_changed', onPlaceSelected);
+  }
+}
+
+// 검색 결과 선택 시 → 상세 모달 열기 (태그하기 버튼 포함)
+async function openSearchResult(place, searchQuery) {
+  const zhName = await fetchChineseName(place.place_id);
+  const pinyin = zhName ? toPinyin(zhName) : '';
+
+  selectedPlace = {
+    name_ko: searchQuery || place.name,
+    name_zh: zhName || null,
+    name_pinyin: pinyin || null,
+    address: place.formatted_address || null,
+    lat: place.geometry.location.lat(),
+    lng: place.geometry.location.lng(),
+    google_place_id: place.place_id,
+    google_rating: place.rating || null,
+  };
+
+  // 이미 태그된 장소인지 확인
+  const existing = places.find(p => p.google_place_id === place.place_id);
+  if (existing) {
+    openDetail(existing);
+    return;
+  }
+
+  // 새 장소 → 태그하기 버튼 보여주는 상세 모달
+  const modal = document.getElementById('modal-detail');
+  document.getElementById('detail-category').textContent = '';
+  document.getElementById('detail-name-ko').textContent = searchQuery || place.name;
+  document.getElementById('detail-name-zh').textContent = zhName || '';
+  document.getElementById('detail-pinyin').textContent = pinyin;
+  document.getElementById('detail-rating').textContent = place.rating ? `⭐ ${place.rating}` : '';
+  document.getElementById('detail-address').textContent = place.formatted_address || '';
+  document.getElementById('detail-wants').classList.add('hidden');
+  document.getElementById('detail-amap').classList.add('hidden');
+  document.getElementById('detail-tag').classList.remove('hidden');
+
+  modal.classList.remove('hidden');
+  modal.classList.add('visible');
 }
 
 async function onPlaceSelected() {
   const place = autocomplete.getPlace();
   if (!place.geometry) return;
 
-  // 중국어 이름 가져오기
   const zhName = await fetchChineseName(place.place_id);
   const pinyin = zhName ? toPinyin(zhName) : '';
 
@@ -98,10 +152,8 @@ async function onPlaceSelected() {
   document.getElementById('preview-pinyin').textContent = pinyin;
   document.getElementById('preview-rating').textContent = place.rating ? `⭐ ${place.rating}` : '';
   document.getElementById('preview-address').textContent = place.formatted_address || '';
-
   document.getElementById('add-preview').classList.remove('hidden');
 
-  // 임시로 선택된 장소 저장
   selectedPlace = {
     name_ko: document.getElementById('search-input').value,
     name_zh: zhName || null,
@@ -335,10 +387,14 @@ function openDetail(place) {
   document.getElementById('detail-pinyin').textContent = place.name_pinyin || '';
   document.getElementById('detail-rating').textContent = place.google_rating ? `⭐ ${place.google_rating}` : '';
   document.getElementById('detail-address').textContent = place.address || '';
-  document.getElementById('detail-wants').textContent = `♥ ${place.wants_count}명`;
-  document.getElementById('detail-wants').className = `wants-btn ${liked ? 'liked' : ''}`;
 
+  // 태그된 장소 → 가고싶어요/길찾기 보이고, 태그하기 숨김
+  document.getElementById('detail-tag').classList.add('hidden');
   const wantsBtn = document.getElementById('detail-wants');
+  wantsBtn.classList.remove('hidden');
+  wantsBtn.textContent = `♥ ${place.wants_count}명`;
+  wantsBtn.className = `wants-btn ${liked ? 'liked' : ''}`;
+  document.getElementById('detail-amap').classList.remove('hidden');
   wantsBtn.onclick = () => handleWants(place, wantsBtn);
 
   document.getElementById('detail-amap').onclick = () => openAmap(place);
@@ -512,6 +568,41 @@ function showSetupBanner() {
   document.getElementById('setup-banner').classList.remove('hidden');
 }
 
+function openCategoryModal() {
+  const modal = document.getElementById('modal-category');
+  modal.classList.remove('hidden');
+  modal.classList.add('visible');
+}
+function closeCategoryModal() {
+  const modal = document.getElementById('modal-category');
+  modal.classList.remove('visible');
+  setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+async function saveSelectedPlace(category) {
+  if (!selectedPlace) return;
+  try {
+    // 중복 체크
+    if (selectedPlace.google_place_id) {
+      const dup = await checkDuplicate(selectedPlace.google_place_id);
+      if (dup) {
+        const dupPlace = places.find(p => p.id === dup.id);
+        if (dupPlace) openDetail(dupPlace);
+        showToast('이미 등록된 장소예요. 가고 싶어요를 눌러보세요! 💛');
+        return;
+      }
+    }
+    const [newPlace] = await savePlace({ ...selectedPlace, category });
+    places.unshift(newPlace);
+    renderAll();
+    showToast('장소가 추가됐어요! 🎉');
+    openDetail(newPlace);
+  } catch (err) {
+    console.error(err);
+    alert('저장 중 오류가 발생했습니다.');
+  }
+}
+
 // ─── 모바일 탭 ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -542,11 +633,26 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 모달 버튼
-  document.getElementById('btn-add-place').addEventListener('click', openAddModal);
   document.getElementById('btn-locate').addEventListener('click', locateMe);
   document.getElementById('btn-close-add').addEventListener('click', closeAddModal);
   document.getElementById('btn-close-detail').addEventListener('click', closeDetailModal);
+  document.getElementById('btn-close-category').addEventListener('click', closeCategoryModal);
   document.getElementById('form-add').addEventListener('submit', handleAddPlace);
+
+  // 태그하기 버튼 → 카테고리 선택 모달 열기
+  document.getElementById('detail-tag').addEventListener('click', () => {
+    closeDetailModal();
+    setTimeout(() => openCategoryModal(), 300);
+  });
+
+  // 카테고리 선택
+  document.querySelectorAll('.cat-select-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const category = btn.dataset.category;
+      closeCategoryModal();
+      await saveSelectedPlace(category);
+    });
+  });
 
   // 모달 배경 클릭 닫기
   document.querySelectorAll('.modal-overlay').forEach(el => {
