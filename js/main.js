@@ -1,10 +1,12 @@
 // ─── 상태 ──────────────────────────────────────────────────────────────────
 let map, autocomplete;
 let markers = {};
+let nearbyMarkers = [];
 let places = [];
 let activeCategory = 'all';
 let activeSort = 'recent';
 let selectedPlace = null;
+let nearbySearchTimeout = null;
 
 // ─── API ───────────────────────────────────────────────────────────────────
 const baseUrl = CONFIG.WORKER_URL || CONFIG.SUPABASE_URL;
@@ -67,6 +69,12 @@ function initMap() {
 
   initAutocomplete();
   loadAndRender();
+
+  // 지도 이동/줌 시 주변 장소 갱신
+  map.addListener('idle', () => {
+    clearTimeout(nearbySearchTimeout);
+    nearbySearchTimeout = setTimeout(loadNearbyPlaces, 500);
+  });
 }
 
 function initAutocomplete() {
@@ -145,6 +153,84 @@ function addMarker(place) {
 function clearMarkers() {
   Object.values(markers).forEach(m => m.setMap(null));
   markers = {};
+}
+
+function clearNearbyMarkers() {
+  nearbyMarkers.forEach(m => m.setMap(null));
+  nearbyMarkers = [];
+}
+
+// 지도 현재 영역 주변 장소 표시 (구글 POI)
+function loadNearbyPlaces() {
+  if (!map) return;
+  const zoom = map.getZoom();
+  if (zoom < 13) { clearNearbyMarkers(); return; } // 너무 멀면 표시 안 함
+
+  const service = new google.maps.places.PlacesService(map);
+  const types = ['restaurant', 'cafe', 'bar', 'tourist_attraction', 'lodging', 'shopping_mall'];
+
+  clearNearbyMarkers();
+
+  types.forEach(type => {
+    service.nearbySearch(
+      { location: map.getCenter(), radius: 1500, type },
+      (results, status) => {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !results) return;
+        results.forEach(result => {
+          // 이미 우리가 태그한 장소면 스킵
+          const alreadyTagged = places.some(p => p.google_place_id === result.place_id);
+          if (alreadyTagged) return;
+
+          const marker = new google.maps.Marker({
+            position: result.geometry.location,
+            map,
+            title: result.name,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              fillColor: '#ffffff',
+              fillOpacity: 0.9,
+              strokeColor: '#aaaaaa',
+              strokeWeight: 1.5,
+              scale: 7,
+            },
+            zIndex: 1,
+          });
+
+          marker.addListener('click', () => openNearbyDetail(result));
+          nearbyMarkers.push(marker);
+        });
+      }
+    );
+  });
+}
+
+// 구글 POI 클릭 시 → 태그 추가 모달 열기
+async function openNearbyDetail(result) {
+  document.getElementById('search-input').value = result.name;
+  document.getElementById('add-preview').classList.remove('hidden');
+
+  const zhName = await fetchChineseName(result.place_id);
+  const pinyin = zhName ? toPinyin(zhName) : '';
+
+  document.getElementById('preview-name-ko').textContent = result.name;
+  document.getElementById('preview-name-zh').textContent = zhName || '';
+  document.getElementById('preview-pinyin').textContent = pinyin;
+  document.getElementById('preview-rating').textContent = result.rating ? `⭐ ${result.rating}` : '';
+  document.getElementById('preview-address').textContent = result.vicinity || '';
+
+  selectedPlace = {
+    name_ko: result.name,
+    name_zh: zhName || null,
+    name_pinyin: pinyin || null,
+    address: result.vicinity || null,
+    lat: result.geometry.location.lat(),
+    lng: result.geometry.location.lng(),
+    google_place_id: result.place_id,
+    google_rating: result.rating || null,
+  };
+
+  document.getElementById('modal-add').classList.remove('hidden');
+  document.getElementById('modal-add').classList.add('visible');
 }
 
 function locateMe() {
